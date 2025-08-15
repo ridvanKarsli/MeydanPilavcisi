@@ -113,6 +113,19 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Header height -> CSS var
+  useEffect(() => {
+    const updateHeaderVar = () => {
+      if (headerRef.current) {
+        const h = headerRef.current.offsetHeight;
+        document.documentElement.style.setProperty('--header-height', `${h}px`);
+      }
+    };
+    updateHeaderVar();
+    window.addEventListener('resize', updateHeaderVar);
+    return () => window.removeEventListener('resize', updateHeaderVar);
+  }, []);
+
   // Smooth scrolling for navigation links
   useEffect(() => {
     const handleClick = (e) => {
@@ -120,14 +133,8 @@ function App() {
         e.target.classList.contains('nav-link') &&
         e.target.getAttribute('href')?.startsWith('#')
       ) {
-        e.preventDefault();
+        // Varsayılan anchor davranışı kalsın, sadece menüyü kapat
         setNavOpen(false);
-        const target = document.querySelector(e.target.getAttribute('href'));
-        if (target && headerRef.current) {
-          const headerHeight = headerRef.current.offsetHeight;
-          const targetPosition = target.offsetTop - headerHeight;
-          window.scrollTo({ top: targetPosition, behavior: 'smooth' });
-        }
       }
     };
     document.addEventListener('click', handleClick);
@@ -155,6 +162,10 @@ function App() {
 
   // Parallax effect for hero section
   useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isDesktop = window.matchMedia('(min-width: 769px)').matches;
+    if (prefersReduced || !isDesktop) return;
+
     const handleScroll = () => {
       const hero = document.querySelector('.hero');
       const scrolled = window.pageYOffset;
@@ -180,8 +191,11 @@ function App() {
     return () => document.removeEventListener('click', handleOrder);
   }, []);
 
-  // Interactive hover effects for menu cards (for mouse only)
+  // Interactive hover effects for menu cards (bind only for non-touch devices)
   useEffect(() => {
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isTouch) return;
+
     const cards = document.querySelectorAll('.menu-card');
     const handleEnter = function () {
       this.style.transform = 'translateY(-10px) scale(1.02)';
